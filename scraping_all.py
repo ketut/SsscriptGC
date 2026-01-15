@@ -124,14 +124,14 @@ def main():
             if prov_match:
                 kode_provinsi_ver_matchapro = prov_match.group(1)
             else:
-                kode_provinsi_ver_matchapro = "122"  # default BALI
+                kode_provinsi_ver_matchapro = "" 
             
             # Cari kode kabupaten
             kab_match = re.search(r'<select id="f_kabupaten".*?<option value="(\d+)" selected>', html_content, re.DOTALL)
             if kab_match:
                 kode_kabupaten_ver_matchapro = kab_match.group(1)
             else:
-                kode_kabupaten_ver_matchapro = "2437"  # default BADUNG
+                kode_kabupaten_ver_matchapro = ""  
             
             # Update BASE_PAYLOAD
             BASE_PAYLOAD["provinsi"] = kode_provinsi_ver_matchapro
@@ -143,8 +143,8 @@ def main():
         except Exception as e:
             print(f"Error saat parsing HTML dari direktori-usaha: {e}")
             # Gunakan default
-            BASE_PAYLOAD["provinsi"] = "122"
-            BASE_PAYLOAD["kabupaten"] = "2437"
+            BASE_PAYLOAD["provinsi"] = ""
+            BASE_PAYLOAD["kabupaten"] = ""
 
     except Exception as e:
         print(f"Error saat login atau ekstraksi: {e}")
@@ -221,3 +221,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
