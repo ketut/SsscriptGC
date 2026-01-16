@@ -1,6 +1,3 @@
-# The Badung 
-# https://dev.ketut.web.id
-
 import requests
 import pandas as pd
 import time
@@ -8,6 +5,27 @@ import sys
 import json
 import re
 from login import login_with_sso
+
+def extract_tokens(page):
+    # Tunggu hingga tag meta token CSRF terpasang
+    page.wait_for_selector('meta[name="csrf-token"]', state='attached', timeout=10000)
+
+    # Ekstrak _token dari halaman (token CSRF dari tag meta)
+    token_element = page.locator('meta[name="csrf-token"]')
+    if token_element.count() > 0:
+        _token = token_element.get_attribute('content')
+    else:
+        raise Exception("Gagal mengekstrak _token - tag meta tidak ditemukan")
+
+    # Ekstrak gc_token dari konten halaman
+    content = page.content()
+    match = re.search(r"let gcSubmitToken = '([^']+)';", content)
+    if match:
+        gc_token = match.group(1)
+    else:
+        raise Exception("Token tidak ditemukan")
+    
+    return _token, gc_token
 
 def main():
     if len(sys.argv) < 3:
@@ -37,33 +55,14 @@ def main():
             page.goto(url_gc)
             page.wait_for_load_state('networkidle')
 
-            # Tunggu hingga tag meta token CSRF terpasang
-            page.wait_for_selector('meta[name="csrf-token"]', state='attached', timeout=10000)
-
-            # Ekstrak _token dari halaman (token CSRF dari tag meta)
-            token_element = page.locator('meta[name="csrf-token"]')
-            if token_element.count() > 0:
-                _token = token_element.get_attribute('content')
-                print(f"Ekstrak _token: {_token}")
-            else:
-                print("Gagal mengekstrak _token - tag meta tidak ditemukan")
-                browser.close()
-                return
+            # Ekstrak tokens
+            _token, gc_token = extract_tokens(page)
+            print(f"Ekstrak _token: {_token}")
+            print(f"gc_token: {gc_token}")
 
             # Dapatkan cookies
             cookies = page.context.cookies()
             session_cookies = {cookie['name']: cookie['value'] for cookie in cookies}
-
-            # Ekstrak gc_token dari konten halaman
-            content = page.content()
-            match = re.search(r"let gcSubmitToken = '([^']+)';", content)
-            if match:
-                gc_token = match.group(1)
-                print(f"gc_token: {gc_token}")
-            else:
-                print("Token tidak ditemukan")
-                browser.close()
-                return
 
             url = "https://matchapro.web.bps.go.id/dirgc/konfirmasi-user"
 
@@ -110,12 +109,35 @@ def main():
                 except PermissionError:
                     print(f"Warning: Tidak bisa menulis ke baris.txt untuk baris {index}")
                 
-                # Cek error
+                if response.status_code != 200:
+                    # Refresh tokens
+                    print("Status code != 200, refreshing tokens...")
+                    page.reload()
+                    page.wait_for_load_state('networkidle')
+                    try:
+                        _token, gc_token = extract_tokens(page)
+                        print(f"Refreshed _token: {_token}")
+                        print(f"Refreshed gc_token: {gc_token}")
+                        # Update cookies
+                        cookies = page.context.cookies()
+                        session_cookies = {cookie['name']: cookie['value'] for cookie in cookies}
+                    except Exception as e:
+                        print(f"Failed to refresh tokens: {e}")
+                        # Continue with old tokens or break?
+                        continue
+                else:
+                    # Update gc_token if present
+                    try:
+                        resp_json = response.json()
+                        if 'new_gc_token' in resp_json:
+                            gc_token = resp_json['new_gc_token']
+                            print(f"Updated gc_token: {gc_token}")
+                    except json.JSONDecodeError:
+                        pass
+                
+                # Cek error untuk logging
                 try:
                     resp_json = response.json()
-                    if 'new_gc_token' in resp_json:
-                        gc_token = resp_json['new_gc_token']
-                        print(f"Updated gc_token: {gc_token}")
                     if resp_json.get('status') == 'error':
                         message = resp_json.get('message', '')
                         if 'Usaha ini sudah diground check' not in message:
@@ -134,7 +156,7 @@ def main():
                             print(f"Warning: Tidak bisa menulis ke error.txt untuk baris {index}: {e}")
                 
                 # Delay untuk menghindari rate limit
-                # time.sleep(1)
+                time.sleep(5)
 
             print("Semua pengiriman selesai.")
 
