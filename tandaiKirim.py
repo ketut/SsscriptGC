@@ -6,6 +6,8 @@ import json
 import re
 from login import login_with_sso
 
+version = "1.1.0"
+
 def extract_tokens(page):
     # Tunggu hingga tag meta token CSRF terpasang
     page.wait_for_selector('meta[name="csrf-token"]', state='attached', timeout=10000)
@@ -28,6 +30,21 @@ def extract_tokens(page):
     return _token, gc_token
 
 def main():
+    # Pengecekan versi
+    try:
+        response = requests.get("https://dev.ketut.web.id/ver.txt", timeout=10)
+        if response.status_code == 200:
+            remote_version = response.text.strip()
+            if remote_version != version:
+                print(f"Versi saat ini: {version}")
+                print(f"Versi terbaru: {remote_version}")
+                print("Versi tidak cocok. Silakan update script.")
+                sys.exit(1)
+        else:
+            print("Gagal mengambil versi terbaru. Melanjutkan...")
+    except Exception as e:
+        print(f"Gagal mengecek versi: {e}. Melanjutkan...")
+
     if len(sys.argv) < 3:
         print("Usage: python tandaiKirim.py <username> <password> [otp_code] [nomor baris]")
         sys.exit(1)
