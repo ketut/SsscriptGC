@@ -124,14 +124,14 @@ def main():
             if prov_match:
                 kode_provinsi_ver_matchapro = prov_match.group(1)
             else:
-                kode_provinsi_ver_matchapro = "" 
+                kode_provinsi_ver_matchapro = "122"  # default BALI
             
             # Cari kode kabupaten
             kab_match = re.search(r'<select id="f_kabupaten".*?<option value="(\d+)" selected>', html_content, re.DOTALL)
             if kab_match:
                 kode_kabupaten_ver_matchapro = kab_match.group(1)
             else:
-                kode_kabupaten_ver_matchapro = ""  
+                kode_kabupaten_ver_matchapro = "2437"  # default BADUNG
             
             # Update BASE_PAYLOAD
             BASE_PAYLOAD["provinsi"] = kode_provinsi_ver_matchapro
@@ -143,8 +143,8 @@ def main():
         except Exception as e:
             print(f"Error saat parsing HTML dari direktori-usaha: {e}")
             # Gunakan default
-            BASE_PAYLOAD["provinsi"] = ""
-            BASE_PAYLOAD["kabupaten"] = ""
+            BASE_PAYLOAD["provinsi"] = "122"
+            BASE_PAYLOAD["kabupaten"] = "2437"
 
     except Exception as e:
         print(f"Error saat login atau ekstraksi: {e}")
@@ -202,23 +202,14 @@ def main():
     print(f"Jumlah kolom yang didapat: {len(df.columns)}")
     print("Nama kolom:", ", ".join(df.columns.tolist()))
 
-    # Simpan ke Excel
+    # Simpan ke CSV
     try:
-        df.to_excel(OUTPUT_EXCEL, index=False, engine='openpyxl')
-        print(f"\nBerhasil disimpan ke: {OUTPUT_EXCEL}")
         df.to_csv(OUTPUT_CSV_FALLBACK, index=False, encoding='utf-8-sig')
-        print("Menyimpan sebagai CSV sebagai cadangan...")
-
+        print(f"\nBerhasil disimpan ke: {OUTPUT_CSV_FALLBACK}")
+        print(f"\nTips: Jika membuka csv di excel pilih dont convert")
     except Exception as e:
-        print(f"Gagal menyimpan Excel: {e}")
-        print("Menyimpan sebagai CSV sebagai cadangan...")
-        try:
-            df.to_csv(OUTPUT_CSV_FALLBACK, index=False, encoding='utf-8-sig')
-            print(f"Berhasil disimpan sebagai: {OUTPUT_CSV_FALLBACK}")
-        except Exception as e2:
-            print(f"Gagal juga menyimpan CSV: {e2}")
+        print(f"Gagal menyimpan CSV: {e}")
 
 
 if __name__ == "__main__":
     main()
-
