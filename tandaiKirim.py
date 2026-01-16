@@ -120,7 +120,8 @@ def main():
                         message = resp_json.get('message', '')
                         if 'Usaha ini sudah diground check' not in message:
                             try:
-                                f.write(f"Row {index}: {response.text}\n")
+                                with open('error.txt', 'a') as f:
+                                    f.write(f"Row {index}: {response.text}\n")
                             except Exception as e:
                                 print(f"Warning: Tidak bisa menulis ke error.txt untuk baris {index}: {e}")
                 except json.JSONDecodeError:
