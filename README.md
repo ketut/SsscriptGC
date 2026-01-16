@@ -57,3 +57,6 @@
 
 **Happy GC Gaes! 🎉**
 
+
+>>Jika script gagal silakan cek kembali repo ini, siapa tahu ada update!
+
