@@ -6,7 +6,7 @@ import json
 import re
 from login import login_with_sso
 
-version = "1.1.0"
+version = "1.1.1"
 
 def extract_tokens(page):
     # Tunggu hingga tag meta token CSRF terpasang
@@ -40,6 +40,7 @@ def main():
                 print(f"Versi terbaru: {remote_version}")
                 print("Gunakan versi terbaru. Silakan unduh dari:")
                 print("https://github.com/ketut/SsscriptGC")
+                time.sleep(5)
                 sys.exit(1)
         else:
             print("Gagal mengambil versi terbaru. Melanjutkan...")
@@ -113,6 +114,35 @@ def main():
                 latitude = row['latitude']
                 longitude = row['longitude']
                 hasilgc = row['hasilgc']
+                
+                # Pengecekan hasilgc
+                if hasilgc is None or str(hasilgc).strip() == '' or hasilgc not in [99, 1, 3, 4]:
+                    print(f"Pemberitahuan: hasilgc untuk baris {index} kosong atau tidak valid ({hasilgc}). Nilai yang diperbolehkan: 99, 1, 3, atau 4.")
+                    choice = input("Apakah Anda ingin berhenti (y) atau lanjut ke baris berikutnya (n)? ").strip().lower()
+                    if choice == 'y':
+                        print("Proses dihentikan.")
+                        sys.exit(0)
+                    elif choice == 'n':
+                        print("Melanjutkan ke baris berikutnya.")
+                        continue
+                    else:
+                        print("Input tidak valid. Melanjutkan ke baris berikutnya.")
+                        continue
+                
+                # Pengecekan tambahan: jika hasilgc = 1, latitude dan longitude harus ada
+                if hasilgc == 1:
+                    if pd.isna(latitude) or str(latitude).strip() == '' or pd.isna(longitude) or str(longitude).strip() == '':
+                        print(f"Pemberitahuan: Untuk hasilgc=1 pada baris {index}, latitude dan longitude harus diisi. Latitude: {latitude}, Longitude: {longitude}.")
+                        choice = input("Apakah Anda ingin berhenti (y) atau lanjut ke baris berikutnya (n)? ").strip().lower()
+                        if choice == 'y':
+                            print("Proses dihentikan.")
+                            sys.exit(0)
+                        elif choice == 'n':
+                            print("Melanjutkan ke baris berikutnya.")
+                            continue
+                        else:
+                            print("Input tidak valid. Melanjutkan ke baris berikutnya.")
+                            continue
                 
                 payload = f"perusahaan_id={perusahaan_id}&latitude={latitude}&longitude={longitude}&hasilgc={hasilgc}&gc_token={gc_token}&_token={_token}"
                 
@@ -188,4 +218,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
