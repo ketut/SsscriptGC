@@ -6,6 +6,7 @@ import pandas as pd
 import time
 import sys
 import json
+import re
 from login import login_with_sso
 
 def main():
@@ -53,12 +54,22 @@ def main():
             cookies = page.context.cookies()
             session_cookies = {cookie['name']: cookie['value'] for cookie in cookies}
 
+            # Ekstrak gc_token dari konten halaman
+            content = page.content()
+            match = re.search(r"let gcSubmitToken = '([^']+)';", content)
+            if match:
+                gc_token = match.group(1)
+                print(f"gc_token: {gc_token}")
+            else:
+                print("Token tidak ditemukan")
+                browser.close()
+                return
+
             url = "https://matchapro.web.bps.go.id/dirgc/konfirmasi-user"
 
             # Baca CSV
             df = pd.read_csv('data_gc_profiling_bahan_kirim.csv')
 
-            
             headers = {
                 "host": "matchapro.web.bps.go.id",
                 "connection": "keep-alive",
@@ -86,7 +97,7 @@ def main():
                 longitude = row['longitude']
                 hasilgc = row['hasilgc']
                 
-                payload = f"perusahaan_id={perusahaan_id}&latitude={latitude}&longitude={longitude}&hasilgc={hasilgc}&_token={_token}"
+                payload = f"perusahaan_id={perusahaan_id}&latitude={latitude}&longitude={longitude}&hasilgc={hasilgc}&gc_token={gc_token}&_token={_token}"
                 
                 response = requests.post(url, data=payload, headers=headers, cookies=session_cookies)
                 
@@ -102,6 +113,9 @@ def main():
                 # Cek error
                 try:
                     resp_json = response.json()
+                    if 'new_gc_token' in resp_json:
+                        gc_token = resp_json['new_gc_token']
+                        print(f"Updated gc_token: {gc_token}")
                     if resp_json.get('status') == 'error':
                         message = resp_json.get('message', '')
                         if 'Usaha ini sudah diground check' not in message:
