@@ -8,7 +8,21 @@ def login_with_sso(username, password, otp_code=None):
     """
     p = sync_playwright().start()
     browser = p.chromium.launch(headless=False)  # Set to True for headless
-    page = browser.new_page()
+    
+    # Emulate mobile to avoid "Not Authorized" / "Akses lewat matchapro mobile aja"
+    context = browser.new_context(
+        user_agent="Mozilla/5.0 (Linux; Android 12; M2010J19CG Build/SKQ1.211202.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/143.0.7499.192 Mobile Safari/537.36",
+        viewport={"width": 412, "height": 915},
+        is_mobile=True,
+        has_touch=True,
+        extra_http_headers={
+            "x-requested-with": "com.matchapro.app",
+            "sec-ch-ua": "\"Android WebView\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?1",
+            "sec-ch-ua-platform": "\"Android\""
+        }
+    )
+    page = context.new_page()
 
     try:
         # Navigasi ke halaman login
