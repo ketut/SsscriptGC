@@ -4,7 +4,7 @@ import time
 import sys
 import json
 import re
-from login import login_with_sso
+from login import login_with_sso, user_agents
 
 version = "1.2.2"
 
@@ -122,7 +122,7 @@ def main():
                 "sec-ch-ua-mobile": "?1",
                 "sec-ch-ua-platform": "\"Android\"",
                 "upgrade-insecure-requests": "1",
-                "user-agent": "Mozilla/5.0 (Linux; Android 12; M2010J19CG Build/SKQ1.211202.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/143.0.7499.192 Mobile Safari/537.36",
+                "user-agent": user_agents,
                 "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "x-requested-with": "com.matchapro.app",
                 "sec-fetch-site": "same-origin",
@@ -272,4 +272,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
