@@ -6,7 +6,7 @@ import json
 import re
 from login import login_with_sso
 
-version = "1.1.1"
+version = "1.2.1"
 
 def extract_tokens(page):
     # Tunggu hingga tag meta token CSRF terpasang
@@ -21,10 +21,19 @@ def extract_tokens(page):
 
     # Ekstrak gc_token dari konten halaman
     content = page.content()
-    match = re.search(r"let gcSubmitToken = '([^']+)';", content)
+    # Mencoba mencocokkan 'let gcSubmitToken' dengan kutip satu atau dua dan spasi fleksibel
+    match = re.search(r"let\s+gcSubmitToken\s*=\s*(['\"])([^'\"]+)\1", content)
     if match:
-        gc_token = match.group(1)
+        gc_token = match.group(2)
     else:
+        # Simpan konten halaman untuk debugging jika token tidak ditemukan
+        try:
+            with open("debug_page_content.html", "w", encoding="utf-8") as f:
+                f.write(content)
+            print("Gagal menemukan gc_token. Konten halaman telah disimpan ke debug_page_content.html")
+        except Exception as e:
+            print(f"Gagal menyimpan debug page: {e}")
+            
         raise Exception("Token tidak ditemukan")
     
     return _token, gc_token
@@ -91,20 +100,20 @@ def main():
             headers = {
                 "host": "matchapro.web.bps.go.id",
                 "connection": "keep-alive",
-                "sec-ch-ua-platform": "\"Windows\"",
-                "x-requested-with": "XMLHttpRequest",
-                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-                "accept": "*/*",
-                "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
-                "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "sec-ch-ua-mobile": "?0",
-                "origin": "https://matchapro.web.bps.go.id",
+                "sec-ch-ua": "\"Android WebView\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+                "sec-ch-ua-mobile": "?1",
+                "sec-ch-ua-platform": "\"Android\"",
+                "upgrade-insecure-requests": "1",
+                "user-agent": "Mozilla/5.0 (Linux; Android 12; M2010J19CG Build/SKQ1.211202.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/143.0.7499.192 Mobile Safari/537.36",
+                "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+                "x-requested-with": "com.matchapro.app",
                 "sec-fetch-site": "same-origin",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-dest": "empty",
-                "referer": "https://matchapro.web.bps.go.id/dirgc",
+                "sec-fetch-mode": "navigate",
+                "sec-fetch-user": "?1",
+                "sec-fetch-dest": "document",
+                "referer": "https://matchapro.web.bps.go.id/",
                 "accept-encoding": "gzip, deflate, br, zstd",
-                "accept-language": "en-US,en;q=0.9",
+                "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
             }
 
             # Loop untuk setiap baris mulai dari nomor_baris
@@ -158,21 +167,28 @@ def main():
                     print(f"Warning: Tidak bisa menulis ke baris.txt untuk baris {index}")
                 
                 if response.status_code != 200:
-                    # Refresh tokens
+                    # Refresh tokens with retry mechanism
                     print("Status code != 200, refreshing tokens...")
-                    page.reload()
-                    page.wait_for_load_state('networkidle')
-                    try:
-                        _token, gc_token = extract_tokens(page)
-                        print(f"Refreshed _token: {_token}")
-                        print(f"Refreshed gc_token: {gc_token}")
-                        # Update cookies
-                        cookies = page.context.cookies()
-                        session_cookies = {cookie['name']: cookie['value'] for cookie in cookies}
-                    except Exception as e:
-                        print(f"Failed to refresh tokens: {e}")
-                        # Continue with old tokens or break?
-                        continue
+                    max_retries = 3
+                    for attempt in range(max_retries):
+                        try:
+                            page.reload()
+                            page.wait_for_load_state('networkidle')
+                            _token, gc_token = extract_tokens(page)
+                            print(f"Refreshed _token: {_token}")
+                            print(f"Refreshed gc_token: {gc_token}")
+                            # Update cookies
+                            cookies = page.context.cookies()
+                            session_cookies = {cookie['name']: cookie['value'] for cookie in cookies}
+                            break  # Success, exit retry loop
+                        except Exception as e:
+                            print(f"Attempt {attempt + 1} failed: {e}")
+                            if attempt < max_retries - 1:
+                                print("Retrying in 5 seconds...")
+                                time.sleep(5)
+                            else:
+                                print("Max retries reached. Silakan jalankan ulang script.")
+                                sys.exit(1)
                 else:
                     # Update gc_token if present
                     try:
