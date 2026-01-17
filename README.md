@@ -60,7 +60,14 @@
 **Happy GC Gaes! 🎉**
 
 
+#### tentang script
+> scraping_all.py untuk mengunduh seluruh data (menurut wilayah user) dari matchapro, baik yang sudah diprofiling maupun yang belum diprofiling (filter `history_ref_profiling_id`)
+> tandaiKirim.py untuk melakukan tandai secara otomatis, terutama ditujukan pada usaha-usaha yang sudah diprofiling dan diyakini profiling yang dilakukan sudah merupakn opsi terbaik, script ini merupakan otomatisasi tandai matchapro-mobile.
+
+#### ⚠️ Untuk menjaga integritas data, pastikan data input valid
+
 >>Jika script gagal silakan cek kembali repo ini, siapa tahu ada update!
+
 
 
 
