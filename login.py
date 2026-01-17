@@ -11,7 +11,7 @@ def login_with_sso(username, password, otp_code=None):
     
     # Emulate mobile to avoid "Not Authorized" / "Akses lewat matchapro mobile aja"
     context = browser.new_context(
-        user_agent="Mozilla/5.0 (Linux; Android 15; ONEPLUS PJZ110 Build/TP1A.220905.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.200 Mobile Safari/537.36",
+        user_agent="Mozilla/5.0 (Linux; Android 12; M2010J19CG Build/SKQ1.211202.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/143.0.7499.192 Mobile Safari/537.36",
         viewport={"width": 412, "height": 915},
         is_mobile=True,
         has_touch=True,
