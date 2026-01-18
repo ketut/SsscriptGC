@@ -24,7 +24,7 @@
 5. **Download Raw Data** 📥  
    Jalankan script untuk mengunduh data:  
    ```
-   python scraping_all.py
+   python scraping_all.py atau py scraping_all.py (tergantung instalasi python anda)
    ```
 
 6. **Pengolahan Data** 🔄  
@@ -47,6 +47,10 @@
    ```
    python tandaiKirim.py username password OTP_opsional barisMulai
    ```
+   atau 
+   ```
+   py tandaiKirim.py username password OTP_opsional barisMulai
+   ```
 
 11. **Kopi Sudah Dingin?** 😄  
    Waktunya istirahat sejenak!
@@ -67,6 +71,7 @@
 #### ⚠️ Untuk menjaga integritas data, pastikan data input valid
 
 >>Jika script gagal silakan cek kembali repo ini, siapa tahu ada update!
+
 
 
 
