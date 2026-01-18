@@ -1,6 +1,6 @@
 ***What's new***
->> file scraping_all_v2.py dan tandaKirim_v2.py (menggunakan delimiter CSV ';')
->> scraping_all.py dan tandaKirim.py (menggunakan delimiter CSV ',')
+- file scraping_all_v2.py dan tandaKirim_v2.py (menggunakan delimiter CSV ';')
+- scraping_all.py dan tandaKirim.py (menggunakan delimiter CSV ',')
 
 # 🚀 Panduan Penggunaan Script GC
 
@@ -71,6 +71,7 @@
 #### ⚠️ Untuk menjaga integritas data, pastikan data input valid
 
 >>Jika script gagal silakan cek kembali repo ini, siapa tahu ada update!
+
 
 
 
