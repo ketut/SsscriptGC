@@ -165,7 +165,7 @@ def main():
 
     total_records = first_response["recordsTotal"]
     print(f"Total data yang tersedia : {total_records:,} record")
-    print(f"Output akan disimpan ke : {OUTPUT_EXCEL}\n")
+    print(f"Output akan disimpan ke : {OUTPUT_CSV_FALLBACK}\n")
 
     all_records = []
     length_per_request = 1000  # Kurangi dari 2000 untuk menghindari response terpotong
@@ -207,9 +207,12 @@ def main():
         df.to_csv(OUTPUT_CSV_FALLBACK, index=False, encoding='utf-8-sig')
         print(f"\nBerhasil disimpan ke: {OUTPUT_CSV_FALLBACK}")
         print(f"\nTips: Jika membuka csv di excel pilih dont convert")
+        print(f"\nData hasil download dari matchapro ini merupakan data sesudah dan sebelum profiling, wajin diolah terlebih dahulu sebelum dikirim")
+        print(f"\nPENTING: Sebelum melakukan pengiriman GC, dipastikan data sudah valid, pastikan format koordinat dan kode hasilgc sudah sesuai")
     except Exception as e:
         print(f"Gagal menyimpan CSV: {e}")
 
 
 if __name__ == "__main__":
     main()
+
