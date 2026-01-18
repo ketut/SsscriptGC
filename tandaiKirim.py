@@ -113,7 +113,18 @@ def main():
             url = "https://matchapro.web.bps.go.id/dirgc/konfirmasi-user"
 
             # Baca CSV
-            df = pd.read_csv('data_gc_profiling_bahan_kirim.csv', encoding='cp1252')
+            encodings_to_try = ['utf-8', 'cp1252', 'latin1']
+            df = None
+            for enc in encodings_to_try:
+                try:
+                    df = pd.read_csv('data_gc_profiling_bahan_kirim.csv', encoding=enc)
+                    print(f"Berhasil membaca dengan encoding: {enc}")
+                    break
+                except UnicodeDecodeError:
+                    print(f"Gagal dengan encoding: {enc}, mencoba yang lain...")
+                    continue
+            if df is None:
+                raise ValueError("Tidak bisa membaca file dengan encoding yang dicoba.")
 
             headers = {
                 "host": "matchapro.web.bps.go.id",
@@ -272,4 +283,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
