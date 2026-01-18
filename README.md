@@ -51,6 +51,7 @@
    ```
    py tandaiKirim.py username password OTP_opsional barisMulai
    ```
+>> nomor baris yang terakhir dikirim tersimpan di file baris.txt, eksekusi script selanjutnya akan melanjutkan baris sesuai dengan baris.txt
 
 11. **Kopi Sudah Dingin?** 😄  
    Waktunya istirahat sejenak!
@@ -71,6 +72,7 @@
 #### ⚠️ Untuk menjaga integritas data, pastikan data input valid
 
 >>Jika script gagal silakan cek kembali repo ini, siapa tahu ada update!
+
 
 
 
