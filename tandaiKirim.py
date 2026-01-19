@@ -117,7 +117,7 @@ def main():
             df = None
             for enc in encodings_to_try:
                 try:
-                    df = pd.read_csv('data_gc_profiling_bahan_kirim.csv', encoding=enc)
+                    df = pd.read_csv('GC_TDK_DITEMUKAN.csv', encoding=enc)
                     print(f"Berhasil membaca dengan encoding: {enc}")
                     break
                 except UnicodeDecodeError:
@@ -183,30 +183,101 @@ def main():
                             continue
                 
                 # Gunakan Playwright API Request untuk mengirim data (lebih aman dari blokir)
-                try:
-                    form_data = {
-                        "perusahaan_id": str(perusahaan_id),
-                        "latitude": str(latitude),
-                        "longitude": str(longitude),
-                        "hasilgc": str(hasilgc),
-                        "gc_token": gc_token,
-                        "_token": _token
-                    }
-                    
-                    # Headers tambahan spesifik untuk POST ini
-                    post_headers = {
-                        "origin": "https://matchapro.web.bps.go.id",
-                        "referer": "https://matchapro.web.bps.go.id/dirgc"
-                    }
+                max_request_retries = 3
+                request_success = False
+                
+                for request_attempt in range(max_request_retries):
+                    try:
+                        form_data = {
+                            "perusahaan_id": str(perusahaan_id),
+                            "latitude": str(latitude),
+                            "longitude": str(longitude),
+                            "hasilgc": str(hasilgc),
+                            "gc_token": gc_token,
+                            "_token": _token
+                        }
+                        
+                        # Headers tambahan spesifik untuk POST ini
+                        post_headers = {
+                            "origin": "https://matchapro.web.bps.go.id",
+                            "referer": "https://matchapro.web.bps.go.id/dirgc"
+                        }
 
-                    # Kirim request menggunakan context browser (cookies & session otomatis terpakai)
-                    response = page.request.post(url, form=form_data, headers=post_headers)
-                    
-                    status_code = response.status
-                    response_text = response.text()
-                    
-                    print(f"Row {index}: {status_code} - {response_text}")
-                    
+                        # Kirim request menggunakan context browser (cookies & session otomatis terpakai)
+                        response = page.request.post(url, form=form_data, headers=post_headers, timeout=30000)
+                        
+                        status_code = response.status
+                        response_text = response.text()
+                        
+                        # Check if it's a token invalid error that needs refresh
+                        is_token_error = False
+                        if status_code == 400:
+                            try:
+                                resp_json = response.json()
+                                message = resp_json.get('message', '')
+                                if (resp_json.get('status') == 'error' and 
+                                    'Token invalid atau sudah terpakai. Silakan refresh halaman.' in message):
+                                    is_token_error = True
+                            except Exception:
+                                pass
+                        
+                        if is_token_error:
+                            if request_attempt < max_request_retries - 1:
+                                print(f"Token invalid error for row {index} (attempt {request_attempt + 1}/{max_request_retries}). Refreshing tokens...")
+                                # Refresh tokens
+                                try:
+                                    page.reload()
+                                    page.wait_for_load_state('networkidle')
+                                    _token, gc_token = extract_tokens(page)
+                                    print(f"Refreshed _token: {_token}")
+                                    print(f"Refreshed gc_token: {gc_token}")
+                                    time.sleep(2)  # Brief pause before retry
+                                    continue  # Retry the request with new tokens
+                                except Exception as token_refresh_error:
+                                    print(f"Failed to refresh tokens: {token_refresh_error}")
+                                    if request_attempt < max_request_retries - 1:
+                                        print("Retrying request without token refresh...")
+                                        time.sleep(5)
+                                        continue
+                                    else:
+                                        print(f"Max retries reached for row {index} after token refresh failure")
+                                        break
+                            else:
+                                print(f"Token invalid error for row {index}: max retries reached")
+                                break
+                        else:
+                            # Success or other error - exit retry loop
+                            print(f"Row {index}: {status_code} - {response_text}")
+                            request_success = True
+                            break
+                        
+                    except Exception as e:
+                        error_message = str(e).lower()
+                        is_retryable_error = (
+                            "timed out" in error_message or 
+                            "timeout" in error_message or
+                            "econnreset" in error_message or
+                            "connection reset" in error_message or
+                            "connection refused" in error_message or
+                            "connection aborted" in error_message or
+                            "network" in error_message or
+                            "socket" in error_message
+                        )
+                        
+                        if is_retryable_error:
+                            if request_attempt < max_request_retries - 1:
+                                print(f"Connection error untuk row {index} (attempt {request_attempt + 1}/{max_request_retries}): {e}. Retrying in 5 seconds...")
+                                time.sleep(5)
+                                continue
+                            else:
+                                print(f"Error during request logging for row {index}: {e} (max retries reached)")
+                        else:
+                            # Error lain yang tidak bisa di-retry, langsung log dan lanjut
+                            print(f"Error during request logging for row {index}: {e}")
+                            break
+                
+                # Jika request berhasil, lanjutkan dengan pemrosesan response
+                if request_success:
                     # Catat baris terakhir
                     try:
                         with open('baris.txt', 'w') as f:
@@ -214,29 +285,8 @@ def main():
                     except PermissionError:
                         print(f"Warning: Tidak bisa menulis ke baris.txt untuk baris {index}")
                     
-                    if status_code != 200:
-                        # Refresh tokens with retry mechanism
-                        print("Status code != 200, refreshing tokens...")
-                        max_retries = 3
-                        for attempt in range(max_retries):
-                            try:
-                                page.reload()
-                                page.wait_for_load_state('networkidle')
-                                _token, gc_token = extract_tokens(page)
-                                print(f"Refreshed _token: {_token}")
-                                print(f"Refreshed gc_token: {gc_token}")
-                                # Update form data with new tokens for next retry if needed
-                                break  # Success, exit retry loop
-                            except Exception as e:
-                                print(f"Attempt {attempt + 1} failed: {e}")
-                                if attempt < max_retries - 1:
-                                    print("Retrying in 5 seconds...")
-                                    time.sleep(5)
-                                else:
-                                    print("Max retries reached. Silakan jalankan ulang script.")
-                                    sys.exit(1)
-                    else:
-                        # Update gc_token if present
+                    # Update gc_token if present (for successful responses)
+                    if status_code == 200:
                         try:
                             resp_json = response.json()
                             if 'new_gc_token' in resp_json:
@@ -245,31 +295,29 @@ def main():
                         except Exception:
                             pass
                     
-                    # Cek error untuk logging
+                    # Cek error untuk logging (hanya untuk response yang bukan token error)
                     try:
                         resp_json = response.json()
                         if resp_json.get('status') == 'error':
                             message = resp_json.get('message', '')
-                            if 'Usaha ini sudah diground check' not in message:
+                            if ('Usaha ini sudah diground check' not in message and
+                                'Token invalid atau sudah terpakai. Silakan refresh halaman.' not in message):
                                 try:
                                     with open('error.txt', 'a') as f:
                                         f.write(f"Row {index}: {response_text}\n")
                                 except Exception as e:
                                     print(f"Warning: Tidak bisa menulis ke error.txt untuk baris {index}: {e}")
                     except Exception:
-                        # Jika bukan JSON, catat jika status code bukan 200
+                        # Jika bukan JSON atau status bukan 200, catat jika bukan token error
                         if status_code != 200:
                             try:
                                 with open('error.txt', 'a') as f:
                                     f.write(f"Row {index}: Status {status_code} - {response_text}\n")
                             except Exception as e:
                                 print(f"Warning: Tidak bisa menulis ke error.txt untuk baris {index}: {e}")
-
-                except Exception as e:
-                     print(f"Error during request logging for row {index}: {e}")
                 
                 # Delay untuk menghindari rate limit
-                time.sleep(5)
+                time.sleep(6)
 
             print("Semua pengiriman selesai.")
 
@@ -283,5 +331,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
