@@ -8,3 +8,5 @@
 > semakin besar semakin aman, tetapi semakin lama menunggu
 
 
+>> Jika masih terblok berarti users kurang banyak dan atau waktu jeda terlalu kecil
+
