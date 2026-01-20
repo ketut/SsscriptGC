@@ -83,7 +83,7 @@ def main():
         print(f"[DEBUG] Gagal cek MOTD: {e}")
 
     if len(sys.argv) < 3:
-        print("Usage: python tandaiKirim.py <username> <password> [otp_code] [nomor baris]")
+        print("Usage: python tandaiKirim.py <username> <password> [OTP jika menggunakan OTP]")
         sys.exit(1)
 
     username = sys.argv[1]
@@ -421,6 +421,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
