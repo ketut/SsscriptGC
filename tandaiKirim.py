@@ -70,7 +70,7 @@ def main():
         motd_response = requests.get("https://dev.ketut.web.id/TGlrZWxpaG9vZA.txt", timeout=10)
         if motd_response.status_code == 200:
             motd_text = motd_response.text.strip()
-            print(f"[DEBUG] MOTD response: {motd_text}")  # Debug
+            print(f"{motd_text}")  # Debug
             try:
                 motd_data = motd_response.json()
                 if motd_data.get("motd") == 1:
@@ -421,5 +421,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
