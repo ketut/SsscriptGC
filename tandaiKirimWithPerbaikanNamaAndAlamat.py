@@ -6,7 +6,8 @@ import json
 import re
 from login import login_with_sso, user_agents
 
-version = "1.2.2"
+version = "1.2.3"
+# Memastikan nama/alamat berubah
 
 def extract_tokens(page):
     # Tunggu hingga tag meta token CSRF terpasang
@@ -66,7 +67,7 @@ def main():
         print(f"Gagal mengecek versi: {e}. Melanjutkan...")
 
     if len(sys.argv) < 3:
-        print("Usage: python tandaiKirim.py <username> <password> [otp_code] [nomor baris]")
+        print("Usage: python tandaiKirim.py <username> <password> [otp_code]")
         sys.exit(1)
 
     username = sys.argv[1]
@@ -154,7 +155,10 @@ def main():
                 hasilgc = row['hasilgc']
                 nama_usaha_perbaikan = row['nama_usaha_edit']
                 alamat_usaha_perbaikan = row['alamat_usaha_edit']
-                
+                edit_nama   = 1 if pd.notna(row['nama_usaha_edit'])   and row['nama_usaha_edit']   else 0
+                edit_alamat = 1 if pd.notna(row['alamat_usaha_edit']) and row['alamat_usaha_edit'] else 0
+    
+
                 # Pengecekan hasilgc
                 if hasilgc is None or str(hasilgc).strip() == '' or hasilgc not in [99, 1, 3, 4]:
                     print(f"Pemberitahuan: hasilgc untuk baris {index} kosong atau tidak valid ({hasilgc}). Nilai yang diperbolehkan: 99, 1, 3, atau 4.")
@@ -191,6 +195,8 @@ def main():
                         "latitude": str(latitude),
                         "longitude": str(longitude),
                         "hasilgc": str(hasilgc),
+                        "edit_nama": str(edit_nama),
+                        "edit_alamat": str(edit_alamat),
                         "nama_usaha": str(nama_usaha_perbaikan) if nama_usaha_perbaikan else "",
                         "alamat_usaha": str(alamat_usaha_perbaikan) if alamat_usaha_perbaikan else "",
                         "gc_token": gc_token,
