@@ -10,7 +10,7 @@ version = "1.2.4"
 motd = 1
 def extract_tokens(page):
     # Tunggu hingga tag meta token CSRF terpasang
-    page.wait_for_selector('meta[name="csrf-token"]', state='attached', timeout=10000)
+    page.wait_for_selector('meta[name="csrf-token"]', state='attached', timeout=60000)
 
     # Ekstrak _token dari halaman (token CSRF dari tag meta)
     token_element = page.locator('meta[name="csrf-token"]')
@@ -115,8 +115,8 @@ def main():
 
             # Navigasi ke /dirgc
             url_gc = "https://matchapro.web.bps.go.id/dirgc"
-            page.goto(url_gc)
-            page.wait_for_load_state('networkidle')
+            page.goto(url_gc, timeout=60000)
+            page.wait_for_load_state('networkidle', timeout=60000)
 
             # Ekstrak tokens
             _token, gc_token = extract_tokens(page)
