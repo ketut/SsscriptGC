@@ -14,4 +14,5 @@ https://github.com/scito/extract_otp_secrets/releases
 
 
 ## DISCLAIMER
-Pastikan untuk tetap menjaga kerahasiaan SECRET_KEY
+- Pastikan untuk tetap menjaga kerahasiaan SECRET_KEY
+- Jangan pernah diposting di medsos
