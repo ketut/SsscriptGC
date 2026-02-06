@@ -8,7 +8,7 @@ import psutil
 import pyotp
 from loginX import login_with_sso, user_agents
 
-version = "1.2.4"  # Auto Session Refresh
+version = "1.2.5"  # Auto Session Refresh
 motd = 1
 
 def generate_otp(secret_key):
@@ -743,6 +743,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
