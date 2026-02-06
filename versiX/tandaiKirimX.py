@@ -386,6 +386,12 @@ def main():
                             print("Input tidak valid. Melanjutkan ke baris berikutnya.")
                             continue
                 
+                # Handle NaN values for latitude and longitude
+                if pd.isna(latitude):
+                    latitude = ""
+                if pd.isna(longitude):
+                    longitude = ""
+                
                 # Gunakan Playwright API Request untuk mengirim data (lebih aman dari blokir)
                 max_request_retries = 5
                 request_success = False
@@ -743,7 +749,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
 
 
