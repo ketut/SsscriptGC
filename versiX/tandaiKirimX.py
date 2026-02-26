@@ -142,6 +142,23 @@ def main():
 
             url = "https://matchapro.web.bps.go.id/dirgc/konfirmasi-user"
 
+            # Helper: refresh tokens by reloading halaman GC
+            def refresh_tokens_from_page():
+                nonlocal _token, gc_token, page, browser
+                try:
+                    page.goto(url_gc)
+                    page.wait_for_load_state('networkidle')
+                    page.wait_for_selector('meta[name="csrf-token"]', state='attached', timeout=10000)
+                    new_token, new_gc = extract_tokens(page)
+                    if new_token:
+                        _token = new_token
+                    if new_gc:
+                        gc_token = new_gc
+                    print(f"Refreshed tokens: _token={_token}, gc_token={gc_token}")
+                    return True
+                except Exception as e:
+                    print(f"Warning: Gagal refresh tokens: {e}")
+                    return False
             # Baca CSV
             encodings_to_try = ['utf-8', 'cp1252', 'latin1']
             df = None
@@ -288,7 +305,7 @@ def main():
                     try:
                         # Randomize time_on_page untuk lebih natural (5-15 detik)
                         import random
-                        time_on_page = random.randint(16, 32)
+                        time_on_page = random.randint(3, 8)
                         
                         form_data = {
                             "perusahaan_id": str(perusahaan_id),
@@ -326,6 +343,42 @@ def main():
                         
                         status_code = response.status
                         response_text = response.text()
+
+                        # Handle 403 Forbidden or empty response body by refreshing tokens and retrying
+                        if status_code == 403 or (isinstance(response_text, str) and not response_text.strip()):
+                            print(f"Row {index}: Received 403 or empty body (status={status_code}). Attempting token refresh and retry...")
+                            max_403_retries = 2
+                            handled_403 = False
+                            for attempt_403 in range(max_403_retries):
+                                try:
+                                    time.sleep(1)
+                                    refreshed = refresh_tokens_from_page()
+                                    if refreshed:
+                                        # Update form token and retry request
+                                        form_data["_token"] = _token
+                                        try:
+                                            resp_retry = page.request.post(url, form=form_data, headers=post_headers, timeout=30000)
+                                            status_code = resp_retry.status
+                                            response_text = resp_retry.text()
+                                            response = resp_retry
+                                        except Exception as e:
+                                            print(f"Row {index}: Retry after refresh failed: {e}")
+                                            continue
+
+                                        # If retry succeeded (not 403 and has body), break
+                                        if status_code != 403 and (not isinstance(response_text, str) or response_text.strip()):
+                                            print(f"Row {index}: Retry after refresh returned status {status_code}.")
+                                            handled_403 = True
+                                            break
+                                    else:
+                                        print(f"Row {index}: Token refresh failed on attempt {attempt_403+1}/{max_403_retries}")
+                                except Exception as e:
+                                    print(f"Row {index}: Error during 403 handling attempt {attempt_403+1}: {e}")
+                                    time.sleep(1)
+
+                            if not handled_403:
+                                print(f"Row {index}: 403 handling failed after {max_403_retries} attempts, will treat as error.")
+                            # Continue processing with updated response/status_code/response_text (either retried or original)
                         
                         # Handle 429 Too Many Requests
                         if status_code == 429:
