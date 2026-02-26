@@ -287,6 +287,34 @@ def main():
                                 print("Menunggu 10 menit sebagai fallback...")
                                 time.sleep(610)  # 10 menit + 10 detik
                                 continue
+
+                        # Handle 403 Forbidden or empty body (often indicates CSRF/token problem)
+                        if status_code == 403 or (isinstance(response_text, str) and response_text.strip() == ''):
+                            if request_attempt < max_request_retries - 1:
+                                print(f"Row {index}: Received 403 or empty response (attempt {request_attempt + 1}/{max_request_retries}). Refreshing tokens...")
+                                try:
+                                    # Refresh the page and tokens
+                                    page.reload()
+                                    page.wait_for_load_state('networkidle')
+                                    _token, gc_token = extract_tokens(page)
+                                    print(f"Refreshed _token: {_token}")
+                                    print(f"Refreshed gc_token: {gc_token}")
+                                    # Update form data token and retry
+                                    form_data["_token"] = _token
+                                    time.sleep(5)
+                                    continue
+                                except Exception as token_refresh_error:
+                                    print(f"Failed to refresh tokens after 403: {token_refresh_error}")
+                                    if request_attempt < max_request_retries - 1:
+                                        print("Retrying request after short wait...")
+                                        time.sleep(5)
+                                        continue
+                                    else:
+                                        print(f"Max retries reached untuk baris {index} setelah 403 error")
+                                        break
+                            else:
+                                print(f"Max retries reached untuk baris {index} setelah 403 error")
+                                break
                         
                         # Check if it's an error that needs retry on the same row
                         is_retryable_error = False
