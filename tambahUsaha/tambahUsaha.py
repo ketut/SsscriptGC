@@ -5,12 +5,12 @@ import base64
 import json
 import os
 import argparse
-from difflib import SequenceMatcher
 from rapidfuzz import fuzz
 import pandas as pd
 from login import login_with_sso
 
 RESUME_FILE = "baris.txt"
+MAX_SIMILARITY = 85
 
 def clean_text(text):
     """Hapus karakter non-latin (Jepang, Korea, China, dll), sisakan huruf latin, angka, tanda baca umum"""
@@ -70,12 +70,27 @@ def main():
             cookies = page.context.cookies()
             session_cookies = {cookie['name']: cookie['value'] for cookie in cookies}
 
-            # Baca file CSV
-            try:
-                df = pd.read_csv(csv_file)
-                print(f"Loaded {len(df)} rows from {csv_file}")
-            except FileNotFoundError:
-                print(f"File {csv_file} not found")
+            # Baca file CSV dengan beberapa encoding fallback
+            encodings_to_try = ['utf-8', 'cp1252', 'latin1']
+            df = None
+            for enc in encodings_to_try:
+                try:
+                    df = pd.read_csv(csv_file, encoding=enc)
+                    print(f"Loaded {len(df)} rows from {csv_file} (encoding: {enc})")
+                    break
+                except FileNotFoundError:
+                    print(f"File {csv_file} not found")
+                    browser.close()
+                    return
+                except UnicodeDecodeError:
+                    print(f"Gagal membaca {csv_file} dengan encoding: {enc}, mencoba encoding lain...")
+                    continue
+                except Exception as e:
+                    # Tangani error lain (mis. ParserError) dan coba encoding lain
+                    print(f"Error membaca {csv_file} dengan encoding {enc}: {e}")
+                    continue
+            if df is None:
+                print(f"Tidak dapat membaca file {csv_file} dengan encodings: {encodings_to_try}")
                 browser.close()
                 return
 
@@ -249,12 +264,12 @@ def main():
                                 matched_nama_same_desa = item.get('nama', '')
                                 matched_desa = item_desa
 
-                        # SKIP hanya jika similarity > 80% DAN berada di desa yang sama
-                        if max_sim_same_desa > 80:
+                        # SKIP hanya jika similarity > MAX_SIMILARITY DAN berada di desa yang sama
+                        if max_sim_same_desa > MAX_SIMILARITY:
                             print(f"Row {index+1}: SKIP - USAHA SUDAH ADA \"{nama_usaha_raw}\" (similarity {max_sim_same_desa:.1f}% dengan \"{matched_nama_same_desa}\", desa: {matched_desa})")
                             row_done = True
                             break
-                        elif max_sim > 80:
+                        elif max_sim > MAX_SIMILARITY:
                             print(f"Row {index+1}: NAMA MIRIP tapi BEDA DESA - \"{nama_usaha_raw}\" (similarity {max_sim:.1f}% dengan \"{matched_nama}\", desa input: {desa_input}), tetap submit...")
                             payload["totalSimilar"] = str(len(similar_data))
                             row_done = confirm_submit(page, post_url, url_gc, payload, index, nama_usaha_raw, max_sim)
